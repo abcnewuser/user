@@ -1,0 +1,66 @@
+pip install scikit-fuzzy pandas matplotlib seaborn
+
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+import skfuzzy as fuzz
+
+# Step 1: Load the Iris dataset
+# url = "https://raw.githubusercontent.com/uiuc-cse/data-fa14/gh-pages/data/iris.csv"
+url = "iris.csv"
+df = pd.read_csv(url)
+
+# Step 2: Extract numeric features (transpose needed for scikit-fuzzy)
+features = df[['sepal_length', 'sepal_width', 'petal_length', 'petal_width']].values.T
+
+# Step 3: Set the number of clusters
+n_clusters = 3
+
+# Step 4: Apply Fuzzy C-Means (Fuzzy K-Means)
+cntr, u, u0, d, jm, p, fpc = fuzz.cluster.cmeans(
+    data=features,           # input features (transposed)
+    c=n_clusters,            # number of clusters
+    m=2,                     # fuzziness coefficient
+    error=0.005,             # stopping criterion
+    maxiter=1000,            # maximum iterations
+    init=None                # random initial centers
+)
+
+# Step 5: Convert fuzzy memberships to crisp cluster labels
+cluster_labels = np.argmax(u, axis=0)
+
+# Step 6: Add cluster labels to original DataFrame
+df['FuzzyKMeans_Cluster'] = cluster_labels
+
+# Step 7: Print membership degrees for first 5 samples
+print("🔹 First 5 membership degrees (rows: clusters, columns: samples):\n")
+print(np.round(u[:, :5], 3))
+
+# Step 8: Print Fuzzy Partition Coefficient
+print(f"\n🔹 Fuzzy Partition Coefficient (FPC): {fpc:.4f}")
+
+# Step 9: Visualize the clustering using petal length vs. petal width
+plt.figure(figsize=(10, 6))
+sns.scatterplot(
+    x=df['petal_length'],
+    y=df['petal_width'],
+    hue=df['FuzzyKMeans_Cluster'],
+    palette='Set1',
+    s=70
+)
+
+# Plot the cluster centers
+plt.scatter(
+    cntr[:, 2], cntr[:, 3], 
+    marker='X', s=200, c='black', label='Centers'
+)
+
+plt.title("Fuzzy K-Means (C-Means) Clustering on Iris Dataset")
+plt.xlabel("Petal Length")
+plt.ylabel("Petal Width")
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()
