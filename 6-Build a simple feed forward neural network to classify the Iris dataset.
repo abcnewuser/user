@@ -1,0 +1,72 @@
+pip install pandas scikit-learn tensorflow matplotlib
+
+
+
+import pandas as pd
+import numpy as np
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder, StandardScaler
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.utils import to_categorical
+import matplotlib.pyplot as plt
+
+# Step 1: Load the dataset
+# url = "https://raw.githubusercontent.com/uiuc-cse/data-fa14/gh-pages/data/iris.csv"
+url = "iris.csv"
+df = pd.read_csv(url)
+
+# Step 2: Encode labels and prepare features
+X = df[['sepal_length', 'sepal_width', 'petal_length', 'petal_width']].values
+y = df['species'].values
+
+# Label encode species
+le = LabelEncoder()
+y_encoded = le.fit_transform(y)
+y_categorical = to_categorical(y_encoded)
+
+# Step 3: Train/test split
+X_train, X_test, y_train, y_test = train_test_split(X, y_categorical, test_size=0.2, random_state=42)
+
+# Step 4: Feature Scaling
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# Step 5: Build the Feed Forward Neural Network
+model = Sequential()
+model.add(Dense(8, input_dim=4, activation='relu'))  # Hidden layer 1
+model.add(Dense(6, activation='relu'))               # Hidden layer 2
+model.add(Dense(3, activation='softmax'))            # Output layer (3 classes)
+
+# Step 6: Compile the model
+model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+
+# Step 7: Train the model
+history = model.fit(X_train, y_train, epochs=100, batch_size=5, validation_data=(X_test, y_test), verbose=0)
+
+# Step 8: Evaluate model
+loss, accuracy = model.evaluate(X_test, y_test, verbose=0)
+print(f"\n🔹 Test Accuracy: {accuracy*100:.2f}%")
+
+# Step 9: Plot accuracy and loss
+plt.figure(figsize=(12,5))
+
+plt.subplot(1,2,1)
+plt.plot(history.history['accuracy'], label='Train Acc')
+plt.plot(history.history['val_accuracy'], label='Val Acc')
+plt.title('Model Accuracy')
+plt.xlabel('Epoch')
+plt.ylabel('Accuracy')
+plt.legend()
+
+plt.subplot(1,2,2)
+plt.plot(history.history['loss'], label='Train Loss')
+plt.plot(history.history['val_loss'], label='Val Loss')
+plt.title('Model Loss')
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.legend()
+
+plt.tight_layout()
+plt.show()
