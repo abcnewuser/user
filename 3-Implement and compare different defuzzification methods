@@ -1,0 +1,32 @@
+import numpy as np
+import skfuzzy as fuzz
+import matplotlib.pyplot as plt
+
+# Step 1: Define universe and fuzzy output set
+x = np.linspace(0, 10, 1000)
+output_mf = fuzz.gaussmf(x, 5, 1.5)  # Simulated fuzzy output
+
+# Step 2: Apply different defuzzification methods
+centroid = fuzz.defuzz(x, output_mf, 'centroid')
+bisector = fuzz.defuzz(x, output_mf, 'bisector')
+mom = fuzz.defuzz(x, output_mf, 'mom')
+som = fuzz.defuzz(x, output_mf, 'som')
+lom = fuzz.defuzz(x, output_mf, 'lom')
+
+# Step 3: Plotting
+plt.figure(figsize=(10, 6))
+plt.plot(x, output_mf, 'b', linewidth=2, label='Fuzzy Output (Gaussian MF)')
+
+# Marking defuzzified values
+plt.axvline(x=centroid, color='r', linestyle='--', label=f'Centroid: {centroid:.2f}')
+plt.axvline(x=bisector, color='g', linestyle='--', label=f'Bisector: {bisector:.2f}')
+plt.axvline(x=mom, color='m', linestyle='--', label=f'MoM: {mom:.2f}')
+plt.axvline(x=som, color='c', linestyle='--', label=f'SoM: {som:.2f}')
+plt.axvline(x=lom, color='y', linestyle='--', label=f'LoM: {lom:.2f}')
+
+plt.title("Comparison of Defuzzification Methods")
+plt.xlabel("Universe")
+plt.ylabel("Membership")
+plt.legend()
+plt.grid(True)
+plt.show()
