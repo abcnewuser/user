@@ -1,0 +1,40 @@
+pip install pyswarm
+
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+from pyswarm import pso
+
+# Step 1: Define the Rosenbrock Function (banana function)
+def rosenbrock(x):
+    # Rosenbrock function: (a - x)^2 + b * (y - x^2)^2
+    a = 1
+    b = 100
+    return (a - x[0])**2 + b * (x[1] - x[0]**2)**2
+
+# Step 2: Define the PSO optimization bounds for x and y
+lb = [-5, -5]  # lower bounds for x and y
+ub = [5, 5]    # upper bounds for x and y
+
+# Step 3: Perform the optimization using PSO
+best_pos, best_val = pso(rosenbrock, lb, ub)
+
+# Step 4: Print the results
+print(f"Best position (x, y): {best_pos}")
+print(f"Best Rosenbrock value: {best_val}")
+
+# Step 5: Plot the Rosenbrock function surface
+x = np.linspace(-5, 5, 100)
+y = np.linspace(-5, 5, 100)
+X, Y = np.meshgrid(x, y)
+Z = (1 - X)**2 + 100 * (Y - X**2)**2
+
+plt.figure(figsize=(10, 6))
+plt.contourf(X, Y, Z, 50, cmap='inferno')
+plt.colorbar()
+plt.plot(best_pos[0], best_pos[1], 'ro')  # Best position found
+plt.title("Rosenbrock Function Optimization using PSO")
+plt.xlabel("X-axis")
+plt.ylabel("Y-axis")
+plt.show()
