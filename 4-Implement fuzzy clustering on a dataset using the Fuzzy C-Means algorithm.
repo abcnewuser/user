@@ -1,0 +1,43 @@
+pip install scikit-fuzzy pandas matplotlib seaborn
+
+
+
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+import skfuzzy as fuzz
+
+# Step 1: Load the Iris dataset
+url = "iris.csv"
+df = pd.read_csv(url)
+
+# Step 2: Select numeric features for clustering
+data = df[['sepal_length', 'sepal_width', 'petal_length', 'petal_width']].values.T  # transpose for skfuzzy
+
+# Step 3: Apply Fuzzy C-Means clustering
+n_clusters = 3
+cntr, u, u0, d, jm, p, fpc = fuzz.cluster.cmeans(
+    data, c=n_clusters, m=2, error=0.005, maxiter=1000, init=None)
+
+# Step 4: Assign each data point to the cluster with highest membership
+cluster_labels = np.argmax(u, axis=0)
+
+# Step 5: Add cluster labels back to the original DataFrame
+df['FuzzyCluster'] = cluster_labels
+
+# Step 6: Visualize clustering (2D projection)
+plt.figure(figsize=(10, 6))
+sns.scatterplot(x='petal_length', y='petal_width', hue='FuzzyCluster', data=df, palette='Set1')
+plt.title("Fuzzy C-Means Clustering on Iris Dataset")
+plt.xlabel("Petal Length")
+plt.ylabel("Petal Width")
+
+# Plot cluster centers
+plt.scatter(cntr[:, 2], cntr[:, 3], marker='X', s=200, c='black', label='Centers')
+plt.legend()
+plt.grid(True)
+plt.show()
+
+# Step 7: Evaluate with Fuzzy Partition Coefficient (FPC)
+print(f"Fuzzy Partition Coefficient (FPC): {fpc:.4f}")
