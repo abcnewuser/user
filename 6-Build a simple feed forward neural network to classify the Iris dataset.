@@ -1,72 +1,120 @@
-pip install pandas scikit-learn tensorflow matplotlib
+# pip install pandas scikit-learn tensorflow matplotlib
+pip install numpy matplotlib scikit-learn tensorflow
 
 
 
-import pandas as pd
+# Step 1: Import libraries
 import numpy as np
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_iris
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.preprocessing import StandardScaler, OneHotEncoder
+import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense
-from tensorflow.keras.utils import to_categorical
-import matplotlib.pyplot as plt
 
-# Step 1: Load the dataset
-# url = "https://raw.githubusercontent.com/uiuc-cse/data-fa14/gh-pages/data/iris.csv"
-url = "iris.csv"
-df = pd.read_csv(url)
+# Step 2: Load the Iris dataset
+iris = load_iris()
+X = iris.data
+y = iris.target.reshape(-1, 1)
 
-# Step 2: Encode labels and prepare features
-X = df[['sepal_length', 'sepal_width', 'petal_length', 'petal_width']].values
-y = df['species'].values
-
-# Label encode species
-le = LabelEncoder()
-y_encoded = le.fit_transform(y)
-y_categorical = to_categorical(y_encoded)
-
-# Step 3: Train/test split
-X_train, X_test, y_train, y_test = train_test_split(X, y_categorical, test_size=0.2, random_state=42)
-
-# Step 4: Feature Scaling
+# Step 3: Preprocess the data
 scaler = StandardScaler()
-X_train = scaler.fit_transform(X_train)
-X_test = scaler.transform(X_test)
+X = scaler.fit_transform(X)
 
-# Step 5: Build the Feed Forward Neural Network
+encoder = OneHotEncoder(sparse_output=False)
+y = encoder.fit_transform(y)
+
+# Split into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1)
+
+# Step 4: Build a simple model
 model = Sequential()
-model.add(Dense(8, input_dim=4, activation='relu'))  # Hidden layer 1
-model.add(Dense(6, activation='relu'))               # Hidden layer 2
-model.add(Dense(3, activation='softmax'))            # Output layer (3 classes)
+model.add(Dense(10, activation='relu', input_shape=(4,)))
+model.add(Dense(8, activation='relu'))
+model.add(Dense(3, activation='softmax'))  # 3 classes
 
-# Step 6: Compile the model
+# Step 5: Compile and train the model
 model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+history = model.fit(X_train, y_train, epochs=50, batch_size=5, validation_data=(X_test, y_test), verbose=0)
 
-# Step 7: Train the model
-history = model.fit(X_train, y_train, epochs=100, batch_size=5, validation_data=(X_test, y_test), verbose=0)
+# Step 6: Test accuracy
+loss, accuracy = model.evaluate(X_test, y_test)
+print(f"Test Accuracy: {accuracy:.2f}")
 
-# Step 8: Evaluate model
-loss, accuracy = model.evaluate(X_test, y_test, verbose=0)
-print(f"\n🔹 Test Accuracy: {accuracy*100:.2f}%")
-
-# Step 9: Plot accuracy and loss
-plt.figure(figsize=(12,5))
-
-plt.subplot(1,2,1)
-plt.plot(history.history['accuracy'], label='Train Acc')
-plt.plot(history.history['val_accuracy'], label='Val Acc')
-plt.title('Model Accuracy')
-plt.xlabel('Epoch')
-plt.ylabel('Accuracy')
+# Step 7: Plot training loss and accuracy
+plt.plot(history.history['loss'], label='Loss')
+plt.plot(history.history['accuracy'], label='Accuracy')
+plt.title("Training Progress")
+plt.xlabel("Epoch")
 plt.legend()
-
-plt.subplot(1,2,2)
-plt.plot(history.history['loss'], label='Train Loss')
-plt.plot(history.history['val_loss'], label='Val Loss')
-plt.title('Model Loss')
-plt.xlabel('Epoch')
-plt.ylabel('Loss')
-plt.legend()
-
-plt.tight_layout()
 plt.show()
+
+# Step 8: Compare predictions with actual values
+y_pred = model.predict(X_test)
+pred_classes = np.argmax(y_pred, axis=1)
+actual_classes = np.argmax(y_test, axis=1)
+
+print("\nPredicted vs Actual:")
+for p, a in zip(pred_classes, actual_classes):
+    print(f"Predicted: {p}, Actual: {a}")
+
+
+
+
+
+
+
+
+
+# Step 1: Import necessary packages
+from sklearn.datasets import fetch_california_housing
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import mean_squared_error
+import matplotlib.pyplot as plt
+import numpy as np
+import tensorflow as tf
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+
+# Step 2: Load California housing dataset
+housing = fetch_california_housing()
+X = housing.data
+y = housing.target
+
+# Step 3: Preprocess (scale data)
+scaler = StandardScaler()
+X = scaler.fit_transform(X)
+
+# Step 4: Split into training and testing
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1)
+
+# Step 5: Build the neural network model
+model = Sequential()
+model.add(Dense(64, activation='relu', input_shape=(X.shape[1],)))
+model.add(Dense(64, activation='relu'))
+model.add(Dense(1))  # For regression
+
+# Step 6: Compile and train the model
+model.compile(optimizer='adam', loss='mse')
+history = model.fit(X_train, y_train, epochs=50, batch_size=8, validation_data=(X_test, y_test), verbose=0)
+
+# Step 7: Predict and calculate MSE
+y_pred = model.predict(X_test)
+mse = mean_squared_error(y_test, y_pred)
+print(f"\nMean Squared Error (MSE): {mse:.2f}")
+
+# Step 8: Plot training and validation loss
+plt.plot(history.history['loss'], label='Train Loss')
+plt.plot(history.history['val_loss'], label='Validation Loss')
+plt.title('Loss over Epochs')
+plt.xlabel('Epoch')
+plt.ylabel('MSE')
+plt.legend()
+plt.show()
+
+# Step 9: Compare predictions with actual values
+print("\nPredicted vs Actual (first 10):")
+for p, a in zip(y_pred[:10], y_test[:10]):
+    print(f"Predicted: {p[0]:.2f}, Actual: {a:.2f}")
