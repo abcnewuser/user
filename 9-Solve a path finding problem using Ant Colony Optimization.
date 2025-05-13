@@ -1,0 +1,98 @@
+pip install numpy
+
+
+import numpy as np
+import random
+import matplotlib.pyplot as plt
+
+# Step 1: Define the Grid Environment (Maze)
+grid_size = (10, 10)
+grid = np.ones(grid_size)  # All cells are passable
+grid[4, 4] = 0  # Example of an obstacle
+grid[5, 4] = 0  # Another obstacle
+grid[6, 4] = 0  # Another obstacle
+
+start = (0, 0)  # Starting point
+goal = (9, 9)  # Goal point
+
+# Step 2: Define Ant Colony Optimization Parameters
+num_ants = 10
+iterations = 100
+alpha = 1  # pheromone importance
+beta = 2   # distance importance
+evaporation_rate = 0.5
+pheromone_map = np.ones(grid_size)  # Initial pheromone map
+
+# Step 3: Define Ant Movement Functions
+def valid_neighbors(cell):
+    x, y = cell
+    neighbors = [(x + dx, y + dy) for dx, dy in [(-1, 0), (1, 0), (0, -1), (0, 1)]]
+    neighbors = [(nx, ny) for nx, ny in neighbors if 0 <= nx < grid_size[0] and 0 <= ny < grid_size[1]]
+    return [n for n in neighbors if grid[n] == 1]
+
+# Step 4: Ant Pathfinding Function
+def move_ant(pheromone_map, start, goal):
+    current = start
+    path = [current]
+    while current != goal:
+        neighbors = valid_neighbors(current)
+        if not neighbors:
+            break  # Dead end, no path forward
+
+        # Calculate probability of moving to each neighbor based on pheromones
+        probabilities = []
+        for neighbor in neighbors:
+            pheromone = pheromone_map[neighbor]
+            distance = np.linalg.norm(np.array(neighbor) - np.array(goal))
+            prob = (pheromone ** alpha) * ((1 / (distance + 1)) ** beta)
+            probabilities.append(prob)
+
+        # Normalize probabilities
+        total_prob = sum(probabilities)
+        probabilities = [p / total_prob for p in probabilities]
+
+        # Choose the next move based on probabilities
+        next_cell = random.choices(neighbors, probabilities)[0]
+        path.append(next_cell)
+        current = next_cell
+
+    return path if current == goal else []
+
+# Step 5: Update Pheromone Map
+def update_pheromones(pheromone_map, paths, evaporation_rate):
+    pheromone_map *= (1 - evaporation_rate)  # Evaporate pheromones
+    for path in paths:
+        for cell in path:
+            pheromone_map[cell] += 1  # Increase pheromone on the path
+    return pheromone_map
+
+# Step 6: Run Ant Colony Optimization Algorithm
+best_path = []
+for iteration in range(iterations):
+    all_paths = []
+    for _ in range(num_ants):
+        path = move_ant(pheromone_map, start, goal)
+        if path:
+            all_paths.append(path)
+            if len(path) < len(best_path) or not best_path:
+                best_path = path
+
+    pheromone_map = update_pheromones(pheromone_map, all_paths, evaporation_rate)
+
+    # Optionally print progress
+    if iteration % 10 == 0:
+        print(f"Iteration {iteration} - Best path length: {len(best_path)}")
+
+# Step 7: Plot the Results
+print("Best Path:", best_path)
+print("Length of the best path:", len(best_path))
+
+# Create a grid for visualization
+grid_vis = grid.copy()
+for x, y in best_path:
+    grid_vis[x, y] = 0.5  # Mark the path
+
+plt.imshow(grid_vis, cmap='hot', interpolation='nearest')
+plt.plot([start[1], goal[1]], [start[0], goal[0]], 'go', label="Start/Goal")
+plt.title("ACO Pathfinding")
+plt.show()
