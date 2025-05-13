@@ -1,43 +1,66 @@
-pip install scikit-fuzzy pandas matplotlib seaborn
+pip install scikit-fuzzy
 
 
-
-import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sns
+from sklearn.datasets import load_iris, load_wine
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 import skfuzzy as fuzz
 
-# Step 1: Load the Iris dataset
-url = "iris.csv"
-df = pd.read_csv(url)
+# ---------- Helper function to run FCM and plot ----------
+def run_fuzzy_cmeans(data, dataset_name, n_clusters=3):
+    # Step 1: Standardize
+    scaler = StandardScaler()
+    data_scaled = scaler.fit_transform(data)
 
-# Step 2: Select numeric features for clustering
-data = df[['sepal_length', 'sepal_width', 'petal_length', 'petal_width']].values.T  # transpose for skfuzzy
+    # Step 2: Reduce to 2D for visualization
+    pca = PCA(n_components=2)
+    data_2d = pca.fit_transform(data_scaled)
 
-# Step 3: Apply Fuzzy C-Means clustering
-n_clusters = 3
-cntr, u, u0, d, jm, p, fpc = fuzz.cluster.cmeans(
-    data, c=n_clusters, m=2, error=0.005, maxiter=1000, init=None)
+    # Step 3: Run Fuzzy C-Means
+    cntr, u, u0, d, jm, p, fpc = fuzz.cluster.cmeans(
+        data_2d.T, c=n_clusters, m=2, error=0.005, maxiter=1000, init=None
+    )
 
-# Step 4: Assign each data point to the cluster with highest membership
-cluster_labels = np.argmax(u, axis=0)
+    # Step 4: Find cluster membership
+    cluster_membership = np.argmax(u, axis=0)
 
-# Step 5: Add cluster labels back to the original DataFrame
-df['FuzzyCluster'] = cluster_labels
+    # Step 5: Plot
+    plt.figure(figsize=(6, 4))
+    for j in range(n_clusters):
+        plt.scatter(
+            data_2d[cluster_membership == j, 0],
+            data_2d[cluster_membership == j, 1],
+            label=f'Cluster {j+1}'
+        )
+    plt.scatter(cntr[:, 0], cntr[:, 1], marker='x', s=100, c='black', label='Centers')
+    plt.title(f'Fuzzy C-Means Clustering on {dataset_name}')
+    plt.xlabel('PCA1')
+    plt.ylabel('PCA2')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
 
-# Step 6: Visualize clustering (2D projection)
-plt.figure(figsize=(10, 6))
-sns.scatterplot(x='petal_length', y='petal_width', hue='FuzzyCluster', data=df, palette='Set1')
-plt.title("Fuzzy C-Means Clustering on Iris Dataset")
-plt.xlabel("Petal Length")
-plt.ylabel("Petal Width")
+    return fpc
 
-# Plot cluster centers
-plt.scatter(cntr[:, 2], cntr[:, 3], marker='X', s=200, c='black', label='Centers')
-plt.legend()
-plt.grid(True)
-plt.show()
+# ---------- Dataset 1: Iris ----------
+iris = load_iris()
+iris_data = iris.data
+fpc_iris = run_fuzzy_cmeans(iris_data, "Iris Dataset", n_clusters=3)
+print(f"Fuzzy Partition Coefficient (FPC) for Iris: {fpc_iris:.4f}")
 
-# Step 7: Evaluate with Fuzzy Partition Coefficient (FPC)
-print(f"Fuzzy Partition Coefficient (FPC): {fpc:.4f}")
+# ---------- Dataset 2: Wine ----------
+wine = load_wine()
+wine_data = wine.data
+fpc_wine = run_fuzzy_cmeans(wine_data, "Wine Dataset", n_clusters=3)
+print(f"Fuzzy Partition Coefficient (FPC) for Wine: {fpc_wine:.4f}")
+
+# ---------- Comparison ----------
+print("\n--- Dataset Comparison ---")
+print(f"Iris Dataset FPC: {fpc_iris:.4f} (Higher means cleaner clusters)")
+print(f"Wine Dataset FPC: {fpc_wine:.4f}")
+if fpc_iris > fpc_wine:
+    print("➡ Iris dataset shows better-defined fuzzy clusters.")
+else:
+    print("➡ Wine dataset shows better-defined fuzzy clusters.")
