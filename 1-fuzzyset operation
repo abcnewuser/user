@@ -1,0 +1,50 @@
+pip install scikit-fuzzy
+
+
+
+import numpy as np
+import skfuzzy as fuzz
+import matplotlib.pyplot as plt
+
+# Define the universe of discourse
+x = np.linspace(0, 10, 100)
+
+# Define two fuzzy sets A and B using membership functions
+A = fuzz.trimf(x, [2, 4, 6])   # Triangular MF for set A
+B = fuzz.trapmf(x, [4, 5, 7, 9])  # Trapezoidal MF for set B
+
+# Fuzzy Union: max(A, B)
+fuzzy_union = np.fmax(A, B)
+
+# Fuzzy Intersection: min(A, B)
+fuzzy_intersection = np.fmin(A, B)
+
+# Fuzzy Complement: 1 - A
+fuzzy_complement_A = fuzz.fuzzy_not(A)
+
+# Plot the results
+plt.figure(figsize=(10, 7))
+
+plt.subplot(2, 2, 1)
+plt.plot(x, A, 'b', label='A')
+plt.plot(x, B, 'g', label='B')
+plt.title('Fuzzy Sets A and B')
+plt.legend()
+
+plt.subplot(2, 2, 2)
+plt.plot(x, fuzzy_union, 'm', label='A ∪ B (Union)')
+plt.title('Fuzzy Union (max)')
+plt.legend()
+
+plt.subplot(2, 2, 3)
+plt.plot(x, fuzzy_intersection, 'c', label='A ∩ B (Intersection)')
+plt.title('Fuzzy Intersection (min)')
+plt.legend()
+
+plt.subplot(2, 2, 4)
+plt.plot(x, fuzzy_complement_A, 'r', label='¬A (Complement of A)')
+plt.title('Fuzzy Complement of A')
+plt.legend()
+
+plt.tight_layout()
+plt.show()
