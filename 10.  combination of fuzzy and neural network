@@ -1,0 +1,83 @@
+10th Assignment
+
+import numpy as np
+import skfuzzy as fuzz
+from sklearn.datasets import load_iris
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.utils import to_categorical
+import matplotlib.pyplot as plt
+
+# Step 1: Load and scale dataset
+iris = load_iris()
+X = iris.data  # features
+y = iris.target  # labels (0,1,2)
+
+scaler = MinMaxScaler()
+X_scaled = scaler.fit_transform(X)
+
+# Step 2: Fuzzification (convert inputs to fuzzy membership values)
+def fuzzify_features(X):
+    fuzzy_inputs = []
+
+    for feature in X.T:  # for each column (feature)
+        x_min = np.min(feature)
+        x_max = np.max(feature)
+        x_mid = (x_min + x_max) / 2
+        # Create universe of discourse
+        universe = np.arange(x_min, x_max + 0.1, 0.1)  
+
+        small = fuzz.interp_membership(universe, fuzz.trimf(universe, [x_min, x_min, x_mid]), feature)
+        medium = fuzz.interp_membership(universe, fuzz.trimf(universe, [x_min, x_mid, x_max]), feature)
+        large = fuzz.interp_membership(universe, fuzz.trimf(universe, [x_mid, x_max, x_max]), feature)
+
+        fuzzy_inputs.append(np.vstack([small, medium, large]))
+
+    # Stack all features' fuzzy representations: shape = (n_samples, n_features * 3)
+    fuzzy_inputs = np.concatenate(fuzzy_inputs, axis=0).T
+    return fuzzy_inputs
+
+X_fuzzy = fuzzify_features(X_scaled)
+
+# Step 3: Train-test split
+X_train, X_test, y_train, y_test = train_test_split(X_fuzzy, y, test_size=0.3, random_state=42)
+y_train_cat = to_categorical(y_train, num_classes=3)
+y_test_cat = to_categorical(y_test, num_classes=3)
+
+# Step 4: Build Neural Network on fuzzy inputs
+model = Sequential()
+model.add(Dense(10, input_dim=X_train.shape[1], activation='relu'))
+model.add(Dense(10, activation='relu'))
+model.add(Dense(3, activation='softmax'))
+
+model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
+
+# Step 5: Train model
+history = model.fit(X_train, y_train_cat, epochs=50, batch_size=8, validation_data=(X_test, y_test_cat), verbose=0)
+
+# Step 6: Evaluate model
+loss, acc = model.evaluate(X_test, y_test_cat, verbose=0)
+print(f"\n✅ Final Test Accuracy: {acc:.4f}")
+
+# Step 7: Plot training performance
+plt.figure(figsize=(10,4))
+plt.subplot(1,2,1)
+plt.plot(history.history['loss'], label='Train Loss')
+plt.plot(history.history['val_loss'], label='Val Loss')
+plt.title("Loss over Epochs")
+plt.xlabel("Epochs")
+plt.ylabel("Loss")
+plt.legend()
+
+plt.subplot(1,2,2)
+plt.plot(history.history['accuracy'], label='Train Acc')
+plt.plot(history.history['val_accuracy'], label='Val Acc')
+plt.title("Accuracy over Epochs")
+plt.xlabel("Epochs")
+plt.ylabel("Accuracy")
+plt.legend()
+
+plt.tight_layout()
+plt.show()
